@@ -1,13 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 model Todo {
@@ -15,4 +12,28 @@ model Todo {
   createdAt DateTime @default(now())
   text      String
   completed Boolean
+}
+
+model sevendaylines {
+  id            Int           @id @default(autoincrement())
+  routeid       Int           @default(autoincrement())
+  date          DateTime?     @db.Date
+  price         Int?
+  trackedroutes trackedroutes @relation(fields: [routeid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model thirtydaylines {
+  id            Int           @id @default(autoincrement())
+  routeid       Int           @default(autoincrement())
+  date          DateTime?     @db.Date
+  price         Int?
+  trackedroutes trackedroutes @relation(fields: [routeid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model trackedroutes {
+  id             Int              @id @default(autoincrement())
+  origin         String?
+  destination    String?
+  sevendaylines  sevendaylines[]
+  thirtydaylines thirtydaylines[]
 }
