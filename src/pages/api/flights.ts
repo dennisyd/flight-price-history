@@ -1,9 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
 import { trackedroutes } from '@prisma/client';
 import { getAllRowsFromTable } from '../../prismaapi';
 import SkyscannerAPISearchCreate from '../../types/skyscanner';
 import { getDates } from '../../util';
+import { type } from 'os';
+import { _ } from 'lodash';
 
 // combine N routes and M dates into an array of skyscanner requests (N*M)
 const BuildSkyscannerRequests = (
@@ -13,22 +14,24 @@ const BuildSkyscannerRequests = (
 
   return routes.flatMap(({ origin, destination }) => {
     return dates.map((date) => ({
-      market: 'US',
-      locale: 'en-US',
-      currency: 'USD',
-      query_legs: [
-        {
-          origin_place_id: {
-            iata: origin,
+      query: {
+        market: 'US',
+        locale: 'en-US',
+        currency: 'USD',
+        query_legs: [
+          {
+            origin_place_id: {
+              iata: origin,
+            },
+            destination_place_id: {
+              iata: destination,
+            },
+            date,
           },
-          destination_place_id: {
-            iata: destination,
-          },
-          date,
-        },
-      ],
-      cabinclass: 'CABIN_CLASS_ECONOMY',
-      adults: '1',
+        ],
+        adults: '1',
+        cabin_class: 'CABIN_CLASS_ECONOMY',
+      },
     }));
   });
 };
@@ -48,31 +51,34 @@ export default async function handler(
       const routes = await getAllRowsFromTable('trackedroutes');
       const requests = BuildSkyscannerRequests(routes);
 
-      // for (let route of requests) {
-      //   console.log(route.query_legs);
-      // }
+      // get itineraries for each request
+      console.log(process.env.SKYSCANNER_PUBLIC_API_KEY);
 
-      // write a for loop that sends a request to the skyscanner api for each request and then saves the reponse to the res array
+      const responses = await Promise.all(
+        requests.map((request) =>
+          fetch(
+            'https://partners.api.skyscanner.net/apiservices/v3/flights/live/search/create',
+            {
+              method: 'POST',
+              headers: {
+                'x-api-key': 'prtl6749387986743898559646983194',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(request),
+            }
+          )
+        )
+      );
 
-      let res1 = [];
-      for (let request of requests) {
-        let response = await fetch(
-          'https://partners.api.skyscanner.net/apiservices/v3/flights/live/search/create',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': process.env.API_SKYSCANNER_KEY,
-            },
-            body: JSON.stringify(request),
-          }
-        );
-        res1.push(response);
+      const rawSkyscannerData = await Promise.all(
+        responses.map((response) => response.json())
+      );
+
+      for (let y of rawSkyscannerData) {
+        console.log(y);
       }
 
-      console.log(res1);
-
-      res.status(200).json({ requests });
+      res.status(200).send(rawSkyscannerData);
     } catch (err) {
       res.status(500).json({ statusCode: 500, message: err.message });
     }
