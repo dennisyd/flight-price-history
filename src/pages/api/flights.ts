@@ -3,8 +3,6 @@ import { trackedroutes } from '@prisma/client';
 import { getAllRowsFromTable } from '../../prismaapi';
 import SkyscannerAPISearchCreate from '../../types/skyscanner';
 import { getDates } from '../../util';
-import { type } from 'os';
-import { _ } from 'lodash';
 
 // combine N routes and M dates into an array of skyscanner requests (N*M)
 const BuildSkyscannerRequests = (
@@ -51,12 +49,14 @@ export default async function handler(
       const routes = await getAllRowsFromTable('trackedroutes');
       const requests = BuildSkyscannerRequests(routes);
 
-      // get itineraries for each request
       console.log(process.env.SKYSCANNER_PUBLIC_API_KEY);
 
-      const responses = await Promise.all(
-        requests.map((request) =>
-          fetch(
+      let metadataStore = [];
+
+      const rawResponses = await Promise.all(
+        requests.map((request) => {
+          metadataStore.push(request.query.query_legs)
+          return fetch(
             'https://partners.api.skyscanner.net/apiservices/v3/flights/live/search/create',
             {
               method: 'POST',
@@ -66,19 +66,39 @@ export default async function handler(
               },
               body: JSON.stringify(request),
             }
-          )
-        )
+          );
+        })
       );
 
-      const rawSkyscannerData = await Promise.all(
-        responses.map((response) => response.json())
+      const parsedResponses = await Promise.all(
+        rawResponses.map(async (rawResponse, id) => {          
+          return {
+            route: metadataStore[id],
+            content: await (await rawResponse).json(),
+          };
+        })
       );
 
-      for (let y of rawSkyscannerData) {
-        console.log(y);
+      for (let r of parsedResponses) {
+        // r.content.itineraries[r.content.sortingOptions.best[0].itineraryId];
+        console.log('\n\n\n', r.route);
+        console.log(r.content);
+
+        // get top best
+        // get top for cheapest
+        // get top for fastest
+
+        // get
+
+        /*
+
+        for each result
+          - name  
+
+        */
       }
 
-      res.status(200).send(rawSkyscannerData);
+      res.status(200).send(parsedResponses);
     } catch (err) {
       res.status(500).json({ statusCode: 500, message: err.message });
     }
