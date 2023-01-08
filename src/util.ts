@@ -11,7 +11,7 @@ export interface MyDates {
 }
 
 export const getDates = (): MyDates => {
-  // calculate 7 and 30 days from now
+  // calculate skyscanner and prisma date formats for 7 days ahead and 30 days ahead
   let daysAhead = [7, 30];
 
   let dateNow = new Date();
@@ -20,54 +20,47 @@ export const getDates = (): MyDates => {
   let datePlus30d = new Date();
   datePlus30d.setDate(datePlus30d.getDate() + 30);
 
-  let skyscannerFormat = daysAhead.map((el) => {
-    let date = new Date();
-    date.setDate(date.getDate() + el);
-    let year = date.getFullYear();
-    let month = date.getMonth() + 1;
-    let day = date.getDate();
+  // this ensures the dt
+  let skyscannerAndPrismaFormats = daysAhead.reduce(
+    (acc, el) => {
+      let date = new Date();
+      date.setDate(date.getDate() + el);
+      let year = date.getFullYear();
+      let month = date.getMonth() + 1;
+      let day = date.getDate();
 
-    return {
-      year,
-      month,
-      day,
-    };
-  });
-
-  let prismaFormat = daysAhead.map((el) => {
-    let date = new Date();
-    date.setDate(date.getDate() + el);
-    let year = date.getFullYear();
-    let month = date.getMonth() + 1;
-    let day = date.getDate();
-
-    return `${year}-${month < 10 ? `0${month}` : month}-${
-      day < 10 ? `0${day}` : day
-    }`;
-  });
+      return {
+        prismaFormat: [
+          ...acc.prismaFormat,
+          `${year}-${month < 10 ? `0${month}` : month}-${
+            day < 10 ? `0${day}` : day
+          }`,
+        ],
+        skyscannerFormat: [
+          ...acc.skyscannerFormat,
+          {
+            year,
+            month,
+            day,
+          },
+        ],
+      };
+    },
+    { prismaFormat: [], skyscannerFormat: [] }
+  );
 
   return {
     dateNow,
     datePlus7d,
     datePlus30d,
-    skyscannerFormat,
-    prismaFormat,
+    skyscannerFormat: skyscannerAndPrismaFormats.skyscannerFormat,
+    prismaFormat: skyscannerAndPrismaFormats.prismaFormat,
   };
 };
 
-// TODO: make a single function that creates the date, so you have one source of truth, and then compute date formatting needs as you go along, for example:
-// Date –> YYYY-MM-DD for postgres
-// Date –> Skyscanner API format
-export const convertDateToPrisma = ({
-  year,
-  month,
-  day,
-}: {
-  year: number;
-  month: number;
-  day: number;
-}): string =>
-  `${year}-${month < 10 ? `0${month}` : month}-${day < 10 ? `0${day}` : day}`;
+// deprecated probably
+export const convertDateToYYYMMDD = (date: Date) =>
+  date.toISOString().split('T')[0];
 
 type unitArg =
   | 'PRICE_UNIT_UNSPECIFIED'
