@@ -1,37 +1,56 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { trackedroutes } from '@prisma/client';
-import { getAllRowsFromTable } from '../../prismaapi';
-import SkyscannerAPISearchCreate from '../../types/skyscanner';
-import { getDates } from '../../util';
+import {
+  getAllTrackedroutes,
+  createSevendayChart,
+  createThirtydayChart,
+} from '../../prismaapi';
+import SkyscannerAPICreate from '../../types/skyscanner';
+import { getDates, convertDateToPrisma, computePrice } from '../../util';
+import { MyDates } from '../../util';
+import {
+  SevendaylinesRowNoId,
+  ThirtydaylinesRowNoId,
+} from '../../types/prisma';
 
 // combine N routes and M dates into an array of skyscanner requests (N*M)
 const BuildSkyscannerRequests = (
   routes: trackedroutes[]
-): SkyscannerAPISearchCreate[] => {
-  let dates = getDates();
+): SkyscannerAPICreate[] => {
+  let dates: MyDates = getDates();
 
-  return routes.flatMap(({ origin, destination }) => {
-    return dates.map((date) => ({
-      query: {
-        market: 'US',
-        locale: 'en-US',
-        currency: 'USD',
-        query_legs: [
-          {
-            origin_place_id: {
-              iata: origin,
-            },
-            destination_place_id: {
-              iata: destination,
-            },
-            date,
+  return routes.flatMap(
+    ({ id, origin, destination }): SkyscannerAPICreate[] => {
+      return dates.skyscannerFormat.map((date): SkyscannerAPICreate => {
+        return {
+          metadata: {
+            prismaRouteId: id,
+            date: convertDateToPrisma(date),
           },
-        ],
-        adults: '1',
-        cabin_class: 'CABIN_CLASS_ECONOMY',
-      },
-    }));
-  });
+          body: {
+            query: {
+              market: 'US',
+              locale: 'en-US',
+              currency: 'USD',
+              query_legs: [
+                {
+                  origin_place_id: {
+                    iata: origin,
+                  },
+                  destination_place_id: {
+                    iata: destination,
+                  },
+                  date,
+                },
+              ],
+              adults: '1',
+              cabin_class: 'CABIN_CLASS_ECONOMY',
+            },
+          },
+        };
+      });
+    }
+  );
 };
 
 export default async function handler(
@@ -46,17 +65,17 @@ export default async function handler(
     res.status(405).end('Method Not Allowed');
   } else {
     try {
-      const routes = await getAllRowsFromTable('trackedroutes');
+      const myDates = getDates();
+      const routes = await getAllTrackedroutes();
       const requests = BuildSkyscannerRequests(routes);
 
       console.log(process.env.SKYSCANNER_PUBLIC_API_KEY);
 
-      let metadataStore = [];
+      console.log(JSON.stringify(requests[0].body));
 
-      const rawResponses = await Promise.all(
-        requests.map((request) => {
-          metadataStore.push(request.query.query_legs)
-          return fetch(
+      const skyscannerRawResponse = await Promise.all(
+        requests.map(async ({ metadata, body }) => {
+          let response = await fetch(
             'https://partners.api.skyscanner.net/apiservices/v3/flights/live/search/create',
             {
               method: 'POST',
@@ -64,41 +83,62 @@ export default async function handler(
                 'x-api-key': 'prtl6749387986743898559646983194',
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(request),
+              body: JSON.stringify(body),
             }
           );
-        })
-      );
 
-      const parsedResponses = await Promise.all(
-        rawResponses.map(async (rawResponse, id) => {          
           return {
-            route: metadataStore[id],
-            content: await (await rawResponse).json(),
+            metadata,
+            body: await response.json(),
           };
         })
       );
 
-      for (let r of parsedResponses) {
-        // r.content.itineraries[r.content.sortingOptions.best[0].itineraryId];
-        console.log('\n\n\n', r.route);
-        console.log(r.content);
+      // skyscannerRawResponse is an array of objects with metadata and body properties,
+      // we will divide it into two arrays, one ready to post in the 7 day table and one
+      // to post in the 30 day table
+      const rows = skyscannerRawResponse.reduce(
+        (
+          acc,
+          { metadata, body }
+        ): {
+          sevenDayRows: SevendaylinesRowNoId[];
+          thirtyDayRows: ThirtydaylinesRowNoId[];
+        } => {
 
-        // get top best
-        // get top for cheapest
-        // get top for fastest
+          // delacre variables for readability
+          let id = body.content.sortingOptions.best[0].itineraryId;
+          let unit =
+            body.content.results.itineraries[id].pricingOptions[0].unit;
+          let amount =
+            body.content.results.itineraries[id].pricingOptions[0].amount;
+          let date = new Date(metadata.date);
+          let price = computePrice(amount, unit);
 
-        // get
+          // divide into two arrays based on date
+          if (date === myDates.datePlus7d) {
+            acc.sevenDayRows.push({
+              routeid: metadata.prismaRouteId,
+              date,
+              price,
+            });
+          } else if (date === myDates.datePlus30d) {
+            acc.thirtyDayRows.push({
+              routeid: metadata.prismaRouteId,
+              date: metadata.date,
+              price,
+            });
+          }
 
-        /*
+          return acc;
+        },
+        { sevenDayRows: [], thirtyDayRows: [] }
+      );
 
-        for each result
-          - name  
+      await createSevendayChart(rows.sevenDayRows);
+      await createThirtydayChart(rows.thirtyDayRows);
 
-        */
-      }
-
-      res.status(200).send(parsedResponses);
+      res.status(200).send(skyscannerRawResponse);
     } catch (err) {
       res.status(500).json({ statusCode: 500, message: err.message });
     }
