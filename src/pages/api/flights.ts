@@ -6,7 +6,7 @@ import {
   createThirtydayChart,
 } from '../../prismaapi';
 import SkyscannerAPICreate from '../../types/skyscanner';
-import { getDates, convertDateToPrisma, computePrice } from '../../util';
+import { getDates, computePrice, convertDateToYYYMMDD } from '../../util';
 import { MyDates } from '../../util';
 import {
   SevendaylinesRowNoId,
@@ -21,11 +21,12 @@ const BuildSkyscannerRequests = (
 
   return routes.flatMap(
     ({ id, origin, destination }): SkyscannerAPICreate[] => {
-      return dates.skyscannerFormat.map((date): SkyscannerAPICreate => {
+      return dates.skyscannerFormat.map((date, dateid): SkyscannerAPICreate => {
         return {
           metadata: {
             prismaRouteId: id,
-            date: convertDateToPrisma(date),
+            date: dates.prismaFormat[dateid],
+            forTable: dateid === 0 ? 'sevendaylines' : 'thirtydaylines',
           },
           body: {
             query: {
@@ -65,9 +66,8 @@ export default async function handler(
     res.status(405).end('Method Not Allowed');
   } else {
     try {
-      const myDates = getDates();
-      const routes = await getAllTrackedroutes();
-      const requests = BuildSkyscannerRequests(routes);
+      const trackedRoutes = await getAllTrackedroutes();
+      const requests = BuildSkyscannerRequests(trackedRoutes);
 
       console.log(process.env.SKYSCANNER_PUBLIC_API_KEY);
 
@@ -97,6 +97,8 @@ export default async function handler(
       // skyscannerRawResponse is an array of objects with metadata and body properties,
       // we will divide it into two arrays, one ready to post in the 7 day table and one
       // to post in the 30 day table
+      // console.log(skyscannerRawResponse);
+
       const rows = skyscannerRawResponse.reduce(
         (
           acc,
@@ -105,24 +107,35 @@ export default async function handler(
           sevenDayRows: SevendaylinesRowNoId[];
           thirtyDayRows: ThirtydaylinesRowNoId[];
         } => {
-
           // delacre variables for readability
-          let id = body.content.sortingOptions.best[0].itineraryId;
+          let id = body?.content?.sortingOptions?.best[0]?.itineraryId;
           let unit =
-            body.content.results.itineraries[id].pricingOptions[0].unit;
+            body.content.results.itineraries[id].pricingOptions[0].price.unit;
           let amount =
-            body.content.results.itineraries[id].pricingOptions[0].amount;
-          let date = new Date(metadata.date);
-          let price = computePrice(amount, unit);
+            body.content.results.itineraries[id].pricingOptions[0].price.amount;
+          let date = metadata.date;
+
+          console.log(
+            id,
+            body.content.results.itineraries[id].pricingOptions[0],
+            'amount: ',
+            amount,
+            'unit: ',
+            unit,
+            'computePrice result:',
+            computePrice(amount, unit)
+          );
+
+          let price = Math.trunc(computePrice(amount, unit));
 
           // divide into two arrays based on date
-          if (date === myDates.datePlus7d) {
+          if (metadata.forTable === 'sevendaylines') {
             acc.sevenDayRows.push({
               routeid: metadata.prismaRouteId,
               date,
               price,
             });
-          } else if (date === myDates.datePlus30d) {
+          } else if (metadata.forTable === 'thirtydaylines') {
             acc.thirtyDayRows.push({
               routeid: metadata.prismaRouteId,
               date: metadata.date,
@@ -138,7 +151,7 @@ export default async function handler(
       await createSevendayChart(rows.sevenDayRows);
       await createThirtydayChart(rows.thirtyDayRows);
 
-      res.status(200).send(skyscannerRawResponse);
+      res.status(200).send(rows);
     } catch (err) {
       res.status(500).json({ statusCode: 500, message: err.message });
     }
