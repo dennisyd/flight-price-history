@@ -2,6 +2,7 @@ export default interface SkyscannerAPICreate {
   metadata: {
     prismaRouteId: number;
     date: string;
+    forTable: string;
   };
   body: {
     query: {
