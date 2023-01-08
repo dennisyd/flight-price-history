@@ -17,7 +17,7 @@ model Todo {
 model sevendaylines {
   id            Int           @id @default(autoincrement())
   routeid       Int           @default(autoincrement())
-  date          DateTime?     @db.Date
+  date          String?       @db.VarChar(16)
   price         Int?
   trackedroutes trackedroutes @relation(fields: [routeid], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
@@ -25,7 +25,7 @@ model sevendaylines {
 model thirtydaylines {
   id            Int           @id @default(autoincrement())
   routeid       Int           @default(autoincrement())
-  date          DateTime?     @db.Date
+  date          String?       @db.VarChar(16)
   price         Int?
   trackedroutes trackedroutes @relation(fields: [routeid], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
