@@ -1,4 +1,9 @@
-import { PrismaClient, trackedroutes } from '@prisma/client';
+import {
+  PrismaClient,
+  trackedroutes,
+  sevendaylines,
+  thirtydaylines,
+} from '@prisma/client';
 import { SevendaylinesRowNoId, ThirtydaylinesRowNoId } from './types/prisma';
 
 const prisma = new PrismaClient();
@@ -6,6 +11,30 @@ const prisma = new PrismaClient();
 export const getAllTrackedroutes = async (): Promise<trackedroutes[]> => {
   try {
     return await prisma.trackedroutes.findMany();
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+// rewrite the above function but for sevendaylines and thirtydaylines
+
+export const getAllSevendaylines = async (): Promise<
+sevendaylines[]
+> => {
+  try {
+    return await prisma.sevendaylines.findMany();
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+export const getAllThirtydaylines = async (): Promise<
+thirtydaylines[]
+> => {
+  try {
+    return await prisma.thirtydaylines.findMany();
   } catch (error) {
     console.error(error);
     return [];
