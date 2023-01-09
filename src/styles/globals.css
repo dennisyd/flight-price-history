@@ -1,0 +1,10 @@
+/* ./styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply normal-case font-medium py-0;
+  }
+}
