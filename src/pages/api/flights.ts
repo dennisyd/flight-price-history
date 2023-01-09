@@ -1,10 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { trackedroutes } from '@prisma/client';
-import {
-  getAllTrackedroutes,
-  createSevendayChart,
-  createThirtydayChart,
-} from '../../prismaapi';
 import SkyscannerAPICreate from '../../types/skyscanner';
 import { getDates, computePrice, convertDateToYYYMMDD } from '../../util';
 import { MyDates } from '../../util';
@@ -66,7 +61,10 @@ export default async function handler(
     res.status(405).end('Method Not Allowed');
   } else {
     try {
-      const trackedRoutes = await getAllTrackedroutes();
+      const baseurl = `http://localhost:3000/api`;
+      const trackedRoutes = await fetch(`${baseurl}/trackedroutes`).then(
+        (res) => res.json()
+      );
       const requests = BuildSkyscannerRequests(trackedRoutes);
 
       console.log(process.env.SKYSCANNER_PUBLIC_API_KEY);
@@ -107,8 +105,11 @@ export default async function handler(
           sevenDayRows: SevendaylinesRowNoId[];
           thirtyDayRows: ThirtydaylinesRowNoId[];
         } => {
-          // delacre variables for readability
+          // declare variables for readability
           let id = body?.content?.sortingOptions?.best[0]?.itineraryId;
+          console.log('id: ', id);
+          console.log(body.content.results.itineraries[id]);
+
           let unit =
             body.content.results.itineraries[id].pricingOptions[0].price.unit;
           let amount =
@@ -116,7 +117,6 @@ export default async function handler(
           let date = metadata.date;
 
           console.log(
-            id,
             body.content.results.itineraries[id].pricingOptions[0],
             'amount: ',
             amount,
@@ -148,8 +148,15 @@ export default async function handler(
         { sevenDayRows: [], thirtyDayRows: [] }
       );
 
-      await createSevendayChart(rows.sevenDayRows);
-      await createThirtydayChart(rows.thirtyDayRows);
+      await fetch(`${baseurl}/sevendaylines`, {
+        method: 'POST',
+        body: JSON.stringify(rows.sevenDayRows),
+      });
+
+      await fetch(`${baseurl}/thirtydaylines`, {
+        method: 'POST',
+        body: JSON.stringify(rows.thirtyDayRows),
+      });
 
       res.status(200).send(rows);
     } catch (err) {
