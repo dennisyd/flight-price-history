@@ -21,6 +21,11 @@ stretch:
 - contact skyscanner to ask for personal API key
 
 
+todo:
+[x] migrate prisma api
+[ ] build form
+[ ] build chart
+[ ] build cronjob
 
 
 example of how inaccurate skyscanner's data is:

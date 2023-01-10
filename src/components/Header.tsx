@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Container } from './Container';
-import { getAllTrackedroutes } from '../pages/api/prisma';
+import { parentPort } from 'worker_threads';
 
-export function Header() {
+export function Header({ showResultsList }: any) {
   const [inputText, setInputText] = useState('');
 
-  let trackedRoutes = useEffect(() => {
-    console.log(inputText);
-  }, [inputText]);
+  const handleSearch = (e: any) => {
+    if (e.key === 'Enter') {
+      showResultsList(e.target.value);
+    }
+  };
 
   return (
     <header>
@@ -24,6 +26,9 @@ export function Header() {
             <div className="navbar-center">
               <div className="form-control">
                 <input
+                  id="header-search"
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleSearch}
                   type="text"
                   placeholder="Search"
                   className="input input-bordered"
@@ -46,8 +51,11 @@ export function Header() {
 
 export async function getStaticProps() {
   // Call an external API endpoint to get posts
-  const routes = await getAllTrackedroutes();
-  console.log(routes);
+  const routes = await fetch('http://localhost:3000/api/trackedroutes').then(
+    (res) => res.json()
+  );
+
+  console.log('routes: ', routes);
 
   return {
     props: {
