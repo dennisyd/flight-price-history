@@ -3,10 +3,20 @@ import Head from 'next/head';
 import { Container } from '../components/Container';
 import { PrismaClient } from '@prisma/client';
 import { useEffect, useState } from 'react';
+import { Searchbox } from '../components/Searchbox';
+import { useFilterRoutesSearch } from '../hooks/filterSearch';
 
-const Home: NextPage = ({ routes, sevendaylines, thirtydaylines }: any) => {
+const Home: NextPage = ({ routes }: any) => {
+  console.log('IN HOME PAGE: routes: ', routes);
+
+  const { searchTerm, setSearchTerm, filteredRoutes } =
+    useFilterRoutesSearch(routes);
+
+  console.log('IN HOME PAGE: searchTerm: ', searchTerm);
+  console.log('IN HOME PAGE: filteredRoutes: ', filteredRoutes);
+
   return (
-    <div>
+    <Container>
       <Head>
         <title>flightfarehistory</title>
         <meta name="description" content="See the history of flight fares" />
@@ -15,24 +25,35 @@ const Home: NextPage = ({ routes, sevendaylines, thirtydaylines }: any) => {
 
       <main>
         <Container>
-          use the search bar above with the format "[origin] to [destination]"
-          (e.g. "LGW to BOS") to see the history of flight fares 
-          <br />
-          <br />
-          our data is provided by{' '}
-          <a className="underline" href="http://skyscanner.com">
-            skyscanner
-          </a>
-          <br />
-          <br />
-          made by{' '}
-          <a className="underline" href="http://github.com/eula01">
-            eula01
-          </a>
+          <div className="mb-5">
+            <Searchbox searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          </div>
+          {routes.map((route: any) => (
+            <div key={route.id}>
+              <a
+                className="underline"
+                href={`/search?origin=${route.origin}&destination=${route.destination}`}
+              >
+                {route.origin} to {route.destination}
+              </a>
+            </div>
+          ))}
+          {/* </div> */}
         </Container>
       </main>
-    </div>
+    </Container>
   );
 };
+
+export async function getStaticProps() {
+  const prisma = new PrismaClient();
+  const routes = await prisma.trackedroutes.findMany();
+
+  return {
+    props: {
+      routes,
+    },
+  };
+}
 
 export default Home;
