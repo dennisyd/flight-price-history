@@ -5,8 +5,6 @@ import { PrismaClient } from '@prisma/client';
 import { useEffect, useState } from 'react';
 
 const Home: NextPage = ({ routes }: any) => {
-  console.log('IN HOME PAGE: routes: ', routes);
-
   return (
     <div>
       <Head>
@@ -33,6 +31,13 @@ const Home: NextPage = ({ routes }: any) => {
           made by{' '}
           <a className="underline" href="http://github.com/eula01">
             eula01
+          </a>
+          , contributions welcome on{' '}
+          <a
+            className="underline"
+            href="http://github.com/eula01/flightfarehist"
+          >
+            the github repository
           </a>
         </Container>
       </main>
