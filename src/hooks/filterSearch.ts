@@ -2,7 +2,7 @@ import { trackedroutes } from '@prisma/client';
 import { useState } from 'react';
 
 /*
-typescript is being weird, here's the type:
+typescript is being weird so i gave it any. here's the type:
 {
   id: number;
   origin: string;
@@ -10,7 +10,7 @@ typescript is being weird, here's the type:
 }
 */
 
-export function useFilterRoutesSearch<T>(items: T[]) {
+export function useFilterRoutesSearch(items: any) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredRoutes = items.filter((item) => {
