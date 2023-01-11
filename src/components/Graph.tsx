@@ -10,7 +10,6 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { faker } from '@faker-js/faker';
 
 ChartJS.register(
   CategoryScale,
@@ -22,58 +21,56 @@ ChartJS.register(
   Legend
 );
 
-export const options = {
-  responsive: true,
-  plugins: {
-    legend: {
-      position: 'top' as const,
-    },
-    title: {
-      display: true,
-      text: 'Chart.js Line Chart',
-    },
-  },
-};
-
-const labels = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-export const data = {
-  labels,
-  datasets: [
-    {
-      label: 'Buying tickets 7 days in advance',
-      data: labels.map(() => faker.datatype.number({ min: -1000, max: 1000 })),
-      borderColor: 'rgb(255, 99, 132)',
-      backgroundColor: 'rgba(255, 99, 132, 0.5)',
-    },
-    {
-      label: 'Buying tickets 30 days in advance',
-      data: labels.map(() => faker.datatype.number({ min: -1000, max: 1000 })),
-      borderColor: 'rgb(53, 162, 235)',
-      backgroundColor: 'rgba(53, 162, 235, 0.5)',
-    },
-  ],
-};
-
 interface GraphProps {
-  datapoints: any;
-  route: any;
+  data: {
+    filteredSevenday: any;
+    filteredThirtyday: any;
+  };
 }
 
-export function Graph({ route, datapoints }: GraphProps) {
-  console.log('datapoints: ', route);
-  return <Line options={options} data={data} />;
+export function Graph({ data }: GraphProps) {
+  console.log('data in graoh', data);
+
+  const sevendayPrices = data.filteredSevenday.map((el) => {
+    return { x: el.date, y: el.price };
+  });
+  const thirtydayPrices = data.filteredThirtyday.map((el) => {
+    return { x: el.date, y: el.price };
+  });
+
+  console.log('sevendayPrices', sevendayPrices);
+  console.log('thirtydayPrices', thirtydayPrices);
+
+  const opt = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: 'Chart.js Line Chart',
+      },
+    },
+  };
+
+  const cfg = {
+      labels: [],
+      datasets: [
+        {
+          label: 'Price 7 days prior',
+          data: sevendayPrices,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        },
+        {
+          label: 'Price 30 days prior',
+          data: thirtydayPrices,
+          borderColor: 'rgb(53, 162, 235)',
+          backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        },
+      ],
+    }
+
+  return <div>{<Line options={opt} data={cfg} />}</div>;
 }
