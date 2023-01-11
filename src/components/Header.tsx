@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Container } from './Container';
 import { parentPort } from 'worker_threads';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { Prisma, PrismaClient, prisma } from '@prisma/client';
 
 export function Header({ showResultsList }: any) {
   const [inputText, setInputText] = useState('');
+  const router = useRouter();
 
   const handleSearch = (e: any) => {
+    // TODO: add validation on search input
     if (e.key === 'Enter') {
-      showResultsList(e.target.value);
+      const origin = inputText.substring(0, 3);
+      const destination = inputText.substring(inputText.length - 3);
+      router.push(`/search/?origin=${origin}&destination=${destination}`);
     }
   };
 
+  // TODO: extract searchbar into its own component
   return (
     <header>
       <nav>
@@ -18,9 +26,11 @@ export function Header({ showResultsList }: any) {
           <div className="navbar bg-base-100">
             <div className="navbar-start">
               <div className="flex-1">
-                <a className="btn btn-ghost normal-case text-xl">
-                  flightfarehist
-                </a>
+                <Link href="/">
+                  <a className="btn btn-ghost normal-case text-xl">
+                    flightfarehist
+                  </a>
+                </Link>
               </div>
             </div>
             <div className="navbar-center">
@@ -50,16 +60,17 @@ export function Header({ showResultsList }: any) {
 }
 
 export async function getStaticProps() {
-  // Call an external API endpoint to get posts
-  const routes = await fetch('http://localhost:3000/api/trackedroutes').then(
-    (res) => res.json()
-  );
-
-  console.log('routes: ', routes);
+  const prisma = new PrismaClient();
+  // this looks inefficient but it's perfectly fine, these tables will always be very small
+  const routes = await prisma.trackedroutes.findMany();
+  const sevendaylines = await prisma.sevendaylines.findMany();
+  const thirtydaylines = await prisma.thirtydaylines.findMany();
 
   return {
     props: {
       routes,
+      sevendaylines,
+      thirtydaylines,
     },
   };
 }
