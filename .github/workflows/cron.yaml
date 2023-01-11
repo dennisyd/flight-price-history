@@ -1,0 +1,12 @@
+name: daily-cron
+on:
+  schedule:
+    - cron: '0 4 * * *'
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /flights/ endpoint
+        run: |
+          curl --request POST \
+          --url 'https://nextjs-production-52e8.up.railway.app/api/flights?API_SKYSCANNER_SECRET=${{secrets.API_SKYSCANNER_SECRET}}'
