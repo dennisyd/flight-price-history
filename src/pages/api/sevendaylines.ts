@@ -11,13 +11,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       where: { routeid: id },
     });
     res.json(routes);
-    console.log('routes in API handler: ', routes);
   } else if (req.method === 'POST') {
     const data = JSON.parse(req.body);
-    console.log(data);
-    
     const sevendayline = await prisma.sevendaylines.createMany({
-      data
+      data,
     });
 
     res.json(sevendayline);

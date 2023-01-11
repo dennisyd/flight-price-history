@@ -67,10 +67,6 @@ export default async function handler(
       );
       const requests = BuildSkyscannerRequests(trackedRoutes);
 
-      console.log(process.env.SKYSCANNER_PUBLIC_API_KEY);
-
-      console.log(JSON.stringify(requests[0].body));
-
       const skyscannerRawResponse = await Promise.all(
         requests.map(async ({ metadata, body }) => {
           let response = await fetch(
@@ -95,7 +91,6 @@ export default async function handler(
       // skyscannerRawResponse is an array of objects with metadata and body properties,
       // we will divide it into two arrays, one ready to post in the 7 day table and one
       // to post in the 30 day table
-      // console.log(skyscannerRawResponse);
 
       const rows = skyscannerRawResponse.reduce(
         (
@@ -107,8 +102,8 @@ export default async function handler(
         } => {
           // declare variables for readability
           let id = body?.content?.sortingOptions?.best[0]?.itineraryId;
-          console.log('id: ', id);
-          console.log(body.content.results.itineraries[id]);
+          // console.log('id: ', id);
+          // console.log(body.content.results.itineraries[id]);
 
           let unit =
             body.content.results.itineraries[id].pricingOptions[0].price.unit;
@@ -116,15 +111,15 @@ export default async function handler(
             body.content.results.itineraries[id].pricingOptions[0].price.amount;
           let date = metadata.date;
 
-          console.log(
-            body.content.results.itineraries[id].pricingOptions[0],
-            'amount: ',
-            amount,
-            'unit: ',
-            unit,
-            'computePrice result:',
-            computePrice(amount, unit)
-          );
+          // console.log(
+          //   body.content.results.itineraries[id].pricingOptions[0],
+          //   'amount: ',
+          //   amount,
+          //   'unit: ',
+          //   unit,
+          //   'computePrice result:',
+          //   computePrice(amount, unit)
+          // );
 
           let price = Math.trunc(computePrice(amount, unit));
 

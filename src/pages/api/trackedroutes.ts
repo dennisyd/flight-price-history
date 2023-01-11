@@ -8,6 +8,5 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET') {
     const routes = await prisma.trackedroutes.findMany({});
     res.json(routes);
-    console.log('routes in API handler: ', routes);
   }
 };

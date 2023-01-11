@@ -7,13 +7,9 @@ import { Searchbox } from '../components/Searchbox';
 import { useFilterRoutesSearch } from '../hooks/filterSearch';
 
 const Home: NextPage = ({ routes }: any) => {
-  console.log('IN HOME PAGE: routes: ', routes);
-
+  // hook for controlling search bar on index page, filtering routes and mapping them to links
   const { searchTerm, setSearchTerm, filteredRoutes } =
     useFilterRoutesSearch(routes);
-
-  console.log('IN HOME PAGE: searchTerm: ', searchTerm);
-  console.log('IN HOME PAGE: filteredRoutes: ', filteredRoutes);
 
   return (
     <Container>
