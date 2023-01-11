@@ -58,7 +58,7 @@ export const getDates = (): MyDates => {
   };
 };
 
-// deprecated probably
+// deprecated
 export const convertDateToYYYMMDD = (date: Date) =>
   date.toISOString().split('T')[0];
 
