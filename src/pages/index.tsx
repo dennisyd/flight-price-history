@@ -24,6 +24,7 @@ const Home: NextPage = ({ routes }: any) => {
           <div className="mb-5">
             <Searchbox searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
           </div>
+          Currently supported routes:
           {routes.map((route: any) => (
             <div key={route.id}>
               <a
