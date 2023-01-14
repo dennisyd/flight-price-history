@@ -56,7 +56,7 @@ export default async function handler(
   // if not authorized or not post, return 401 and 405 respectively
   // if (req.query.API_SKYSCANNER_SECRET !== process.env.API_SKYSCANNER_SECRET) {
   //   return res.status(401).send('You are not authorized to call this API');
-  // } else 
+  // } else
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     res.status(405).end('Method Not Allowed');
@@ -104,13 +104,15 @@ export default async function handler(
           // declare variables for readability
           let id = body?.content?.sortingOptions?.best[0]?.itineraryId;
           // console.log('id: ', id);
-          // console.log(body.content.results.itineraries[id]);
+          console.log(body.content.results.itineraries[id]);
 
           let unit =
-            body.content.results.itineraries[id].pricingOptions[0].price.unit;
+            body?.content?.results?.itineraries[id]?.pricingOptions[0]?.price
+              ?.unit;
           let amount =
-            body.content.results.itineraries[id].pricingOptions[0].price.amount;
-          let date = metadata.date;
+            body?.content?.results?.itineraries[id]?.pricingOptions[0]?.price
+              ?.amount;
+          let date = metadata?.date;
 
           // console.log(
           //   body.content.results.itineraries[id].pricingOptions[0],
@@ -122,7 +124,8 @@ export default async function handler(
           //   computePrice(amount, unit)
           // );
 
-          let price = Math.trunc(computePrice(amount, unit));
+          let price =
+            unit && amount ? Math.trunc(computePrice(amount, unit)) : undefined;
 
           // divide into two arrays based on date
           if (metadata.forTable === 'sevendaylines') {
