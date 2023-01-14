@@ -54,9 +54,10 @@ export default async function handler(
   res: NextApiResponse
 ) {
   // if not authorized or not post, return 401 and 405 respectively
-  if (req.query.API_SKYSCANNER_SECRET !== process.env.API_SKYSCANNER_SECRET) {
-    return res.status(401).send('You are not authorized to call this API');
-  } else if (req.method !== 'POST') {
+  // if (req.query.API_SKYSCANNER_SECRET !== process.env.API_SKYSCANNER_SECRET) {
+  //   return res.status(401).send('You are not authorized to call this API');
+  // } else 
+  if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     res.status(405).end('Method Not Allowed');
   } else {
