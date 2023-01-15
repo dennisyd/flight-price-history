@@ -12,7 +12,7 @@ export interface MyDates {
 
 export const getDates = (): MyDates => {
   // calculate skyscanner and prisma date formats for 7 days ahead and 30 days ahead
-  let daysAhead = [5, 28];
+  let daysAhead = [7, 30];
 
   let dateNow = new Date();
   let datePlus7d = new Date();
